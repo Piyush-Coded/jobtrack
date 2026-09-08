@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from database import Base, engine
 from models import Application
+from routes.applications import router as applications_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -10,6 +11,8 @@ app = FastAPI(
     description="A Job Application Tracker backend",
     version="0.1.0",
 )
+
+app.include_router(applications_router)
 
 
 @app.get("/health")
