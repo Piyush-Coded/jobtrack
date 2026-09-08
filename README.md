@@ -2,6 +2,15 @@
 
 JobTrack — Job Application Tracker
 
+![Python](https://img.shields.io/badge/Python-3.14-3776AB)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-009688)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-0d597f)
+![SQLite](https://img.shields.io/badge/SQLite-3-003B57)
+![Pydantic](https://img.shields.io/badge/Pydantic-2-E92063)
+![pytest](https://img.shields.io/badge/pytest-9.1-0A9EDC)
+![tests](https://img.shields.io/badge/tests-22%20passed-brightgreen)
+![license](https://img.shields.io/badge/license-MIT-blue)
+
 ## Description
 
 JobTrack is a REST API backend that helps users track their job applications. It provides a simple, practical way to create, view, update, and delete job applications, plus search, filtering, sorting, and statistics — all backed by a local SQLite database. It is intended as a clean, well-tested backend that a future frontend can plug into.
