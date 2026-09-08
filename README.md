@@ -10,6 +10,7 @@ JobTrack — Job Application Tracker
 ![pytest](https://img.shields.io/badge/pytest-9.1-0A9EDC)
 ![tests](https://img.shields.io/badge/tests-22%20passed-brightgreen)
 ![license](https://img.shields.io/badge/license-MIT-blue)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Piyush-Coded/jobtrack)
 
 ## Description
 
@@ -138,12 +139,38 @@ pytest
 
 The test suite uses an isolated in-memory SQLite database, so the real `backend/app/jobtrack.db` is never touched.
 
+## Deployment (Render)
+
+The repository includes a [`render.yaml`](render.yaml) blueprint, so the API can be deployed with one click to a public `https://...onrender.com` URL.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Piyush-Coded/jobtrack)
+
+Steps:
+
+1. Install the Render [CLI](https://render.com/docs/cli), or simply click the **Deploy to Render** button above and sign in with GitHub.
+2. Connect the `Piyush-Coded/jobtrack` repository.
+3. Render reads `render.yaml`, creates the web service, and deploys automatically.
+
+When it finishes, the API is live at a URL like `https://jobtrack-api.onrender.com` with automatic HTTPS. Example:
+
+```text
+https://jobtrack-api.onrender.com/health
+https://jobtrack-api.onrender.com/docs
+```
+
+Notes about the free tier:
+
+- The service **spins down after 15 minutes of inactivity** and wakes on the next request (takes ~1 minute the first time, shown by a loading page).
+- The free tier uses an **ephemeral filesystem**, so data written to the SQLite database may be lost when the service restarts or redeploys. It is ideal for trying the API out, not for permanent data storage.
+
 ## Project Structure
 
 ```
 jobtrack/
 ├── README.md
 ├── .gitignore
+├── LICENSE
+├── render.yaml                # one-click Render deployment blueprint
 └── backend/
     ├── requirements.txt
     ├── .venv/                    # virtual environment (not committed)
