@@ -16,6 +16,19 @@ class ApplicationCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class ApplicationUpdate(BaseModel):
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    location: Optional[str] = None
+    job_url: Optional[str] = None
+    employment_type: Optional[str] = None
+    salary: Optional[float] = None
+    applied_date: Optional[datetime] = None
+    status: Optional[str] = None
+    interview_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
 class ApplicationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
