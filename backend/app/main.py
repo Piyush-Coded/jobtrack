@@ -1,5 +1,10 @@
 from fastapi import FastAPI
 
+from database import Base, engine
+from models import Application
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="JobTrack API",
     description="A Job Application Tracker backend",
