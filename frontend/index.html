@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobTrack - Job Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>JobTrack</h1>
+            <nav>
+                <a href="#jobs" class="nav-link">Jobs</a>
+                <a href="#companies" class="nav-link">Companies</a>
+                <a href="#" id="auth-link">Login</a>
+                <a href="#" id="register-link">Register</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h2>Find Your Next Opportunity</h2>
+                <p>Connecting job seekers with top companies</p>
+                <div class="search-box">
+                    <input type="text" id="job-search" placeholder="Search jobs...">
+                    <select id="job-location">
+                        <option value="">All locations</option>
+                        <option value="Bangalore">Bangalore</option>
+                        <option value="Mumbai">Mumbai</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Pune">Pune</option>
+                    </select>
+                    <button class="btn-primary" id="search-btn">Search</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <section class="featured-jobs">
+            <h2>Featured Jobs</h2>
+            <div class="jobs-grid" id="jobs-grid">
+                <!-- Jobs will be loaded here -->
+            </div>
+        </section>
+
+        <section class="categories">
+            <h2>Popular Categories</h2>
+            <div class="categories-grid">
+                <div class="category-card">IT & Software</div>
+                <div class="category-card">Finance</div>
+                <div class="category-card">Marketing</div>
+                <div class="category-card">Design</div>
+                <div class="category-card">Operations</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 JobTrack. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/common.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/jobs.js"></script>
+</body>
+</html>

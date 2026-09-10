@@ -11,3 +11,17 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
+      - key: DATABASE_URL
+        fromService:
+          type: postgresql
+          name: jobtrack-db
+          property: connectionString
+      - key: JWT_SECRET
+        generate: true
+
+  - type: static
+    name: jobtrack-frontend
+    buildCommand: echo "No build step needed"
+    publishDirectory: frontend
+    plan: free
+    autoDeploy: true

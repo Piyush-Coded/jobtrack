@@ -1,111 +1,135 @@
-from datetime import datetime
-from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Application
-from schemas import ApplicationCreate, ApplicationResponse, ApplicationUpdate
+from dependencies.auth import get_current_user, require_job_seeker, require_recruiter
+from models import Job, Application, User
+from schemas import ApplicationCreate, ApplicationResponse, ApplicationStatusUpdate
+
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
-SORT_FIELDS = {
-    "company_name": Application.company_name,
-    "job_title": Application.job_title,
-    "applied_date": Application.applied_date,
-    "salary": Application.salary,
-    "status": Application.status,
-}
 
-VALID_ORDERS = {"asc", "desc"}
-
-
-@router.post("", response_model=ApplicationResponse, status_code=201)
-def create_application(
-    application: ApplicationCreate, db: Session = Depends(get_db)
+@router.post("", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED)
+def apply_to_job(
+    application_data: ApplicationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_job_seeker),
 ):
-    db_application = Application(**application.model_dump())
-    db.add(db_application)
+    """Apply to a job (job seeker only)."""
+    job_id = application_data.job_id
+    # Check if job exists and is published
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        )
+    if job.status != "published":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot apply to a draft or closed job",
+        )
+
+    # Check if user already applied
+    existing_application = (
+        db.query(Application)
+        .filter(
+            Application.job_id == job_id,
+            Application.candidate_user_id == current_user.id,
+        )
+        .first()
+    )
+    if existing_application:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already applied to this job",
+        )
+
+    # Create application
+    new_application = Application(
+        job_id=job_id,
+        candidate_user_id=current_user.id,
+        resume_url=application_data.get("resume_url"),
+        cover_letter=application_data.get("cover_letter"),
+        status="applied",
+    )
+    db.add(new_application)
     db.commit()
-    db.refresh(db_application)
-    return db_application
+    db.refresh(new_application)
+    return new_application
 
 
 @router.get("", response_model=list[ApplicationResponse])
-def list_applications(
-    search: Optional[str] = None,
-    status: Optional[str] = None,
-    employment_type: Optional[str] = None,
-    sort_by: Optional[str] = None,
-    order: Optional[str] = "asc",
+def list_my_applications(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_job_seeker),
 ):
-    query = db.query(Application)
-
-    if search:
-        pattern = f"%{search}%"
-        query = query.filter(
-            or_(
-                Application.company_name.ilike(pattern),
-                Application.job_title.ilike(pattern),
-                Application.location.ilike(pattern),
-            )
-        )
-
-    if status:
-        query = query.filter(Application.status == status)
-
-    if employment_type:
-        query = query.filter(Application.employment_type == employment_type)
-
-    if sort_by:
-        if sort_by not in SORT_FIELDS:
-            raise HTTPException(status_code=400, detail="Invalid sort field")
-        if order not in VALID_ORDERS:
-            raise HTTPException(status_code=400, detail="Invalid sort order")
-        column = SORT_FIELDS[sort_by]
-        query = query.order_by(column.desc() if order == "desc" else column.asc())
-    else:
-        query = query.order_by(Application.applied_date.desc())
-
-    return query.all()
+    """List current user's applications."""
+    applications = (
+        db.query(Application)
+        .filter(Application.candidate_user_id == current_user.id)
+        .all()
+    )
+    return applications
 
 
 @router.get("/{application_id}", response_model=ApplicationResponse)
-def get_application(application_id: int, db: Session = Depends(get_db)):
-    application = db.query(Application).filter(Application.id == application_id).first()
-    if application is None:
-        raise HTTPException(status_code=404, detail="Application not found")
+def get_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_job_seeker),
+):
+    """Get specific application."""
+    application = (
+        db.query(Application)
+        .filter(Application.id == application_id, Application.candidate_user_id == current_user.id)
+        .first()
+    )
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
     return application
 
 
-@router.put("/{application_id}", response_model=ApplicationResponse)
-def update_application(
+@router.put("/{application_id}/status", response_model=ApplicationResponse)
+def update_application_status(
     application_id: int,
-    application_update: ApplicationUpdate,
+    status_update: ApplicationStatusUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_recruiter),
 ):
-    application = db.query(Application).filter(Application.id == application_id).first()
-    if application is None:
-        raise HTTPException(status_code=404, detail="Application not found")
+    """Update application status (recruiter only)."""
+    application = (
+        db.query(Application)
+        .filter(Application.id == application_id)
+        .first()
+    )
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
 
-    for field, value in application_update.model_dump(exclude_unset=True).items():
-        setattr(application, field, value)
+    # Check that the job belongs to the recruiter's company
+    job = db.query(Job).filter(Job.id == application.job_id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        )
 
+    company = db.query(CompanyProfile).filter(CompanyProfile.id == job.company_id).first()
+    if company.recruiter_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update applications for your own jobs",
+        )
+
+    application.status = status_update.status
     application.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(application)
     return application
-
-
-@router.delete("/{application_id}", status_code=204)
-def delete_application(application_id: int, db: Session = Depends(get_db)):
-    application = db.query(Application).filter(Application.id == application_id).first()
-    if application is None:
-        raise HTTPException(status_code=404, detail="Application not found")
-
-    db.delete(application)
-    db.commit()
-    return None
